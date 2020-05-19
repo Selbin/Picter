@@ -11,6 +11,10 @@ router.post('/:userId', postHandler.getUserPosts)
 
 router.post('/', postHandler.createPost)
 
+// delete post
+
+router.delete('/:postId', postHandler.deletePost)
+
 // like posts
 
 router.post('/like', postHandler.like)
@@ -33,6 +37,6 @@ router.post('/getcomment', postHandler.getComments)
 
 // display timeline
 
-router.get('/timeline', postHandler.loadTimeline)
+// router.get('/timeline', postHandler.loadTimeline)
 
 module.exports = router
