@@ -12,7 +12,6 @@ if (!process.env.PRIVATEKEY) process.exit(1)
 app.use(cors())
 app.use(cookieParser())
 app.use(express.json())
-app.use(express.static('static'))
 app.use(authenticate)
 
 app.use('/picter/api', indexRoutes)
