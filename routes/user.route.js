@@ -96,14 +96,6 @@ router.get('/getfollowers', userHandler.getFollowers)
 
 router.get('/getfollowing', userHandler.getFollowing)
 
-// show requests
-
-router.get('/show_request', userHandler.showRequest)
-
-// accept follow request
-
-router.post('/request', userHandler.acceptRequest)
-
 // search user
 
 router.post('/search', userHandler.searchUser)

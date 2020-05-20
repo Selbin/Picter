@@ -253,41 +253,4 @@ const searchUser = async (req, res) => {
   }
 }
 
-const showRequest = async (req, res) => {
-  const userId = req.user.userId
-  const query = 'select * from requests where user_id = $1'
-  try {
-    const result = await exeQuery(query, [userId])
-    res.status(200).json({ type: 'success', message: result.rows[0] })
-  } catch (error) {
-    console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
-  }
-}
-
-const acceptRequest = async (req, res) => {
-  const { type, followerId, followerCount, requestId } = req.body
-  const userId = req.user.userId
-  const query1 = 'delete from requests where request_id = $1 returning request_id'
-  const query2 = 'insert into following (user_id, following_id, followed_on) values ($1, $2, $3) returning follow_id'
-  const query3 = 'update users set follower_count = $1 where user_id = $2'
-  const query4 = 'select following_count from users where user_id = $1'
-  const query5 = 'update users set following_count = $1 where user_id = $2 '
-  let result = ''
-  try {
-    result = await exeQuery(query1, [requestId])
-    if (type === 'deny') return res.status(200).json({ type: 'success', message: [{ msg: result.rows[0] }, { msg: 'Request cancelled' }] })
-    result = await exeQuery(query2, [followerId, userId, new Date()])
-    const followId = result.rows[0]
-    result = await exeQuery(query1, [requestId])
-    result = await exeQuery(query3, [followerCount + 1, userId])
-    result = await exeQuery(query4, [followerId])
-    result = await exeQuery(query5, [result.rows[0].following_count + 1, followerId])
-    return res.status(200).json({ type: 'success', message: [{ msg: 'following user' }, { msg: followId }] })
-  } catch (error) {
-    console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
-  }
-}
-
-module.exports = { registerUser, loginUser, updateProfile, updatePwd, changeDp, check, getProfile, followUser, unfollowUser, getFollowers, getFollowing, acceptRequest, searchUser, showRequest }
+module.exports = { registerUser, loginUser, updateProfile, updatePwd, changeDp, check, getProfile, followUser, unfollowUser, getFollowers, getFollowing, searchUser }
