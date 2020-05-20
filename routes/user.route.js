@@ -2,7 +2,6 @@ const express = require('express')
 const { check } = require('express-validator')
 const { emailExist, userExist } = require('../middlewares/registerValidation')
 const router = express.Router()
-const uploadFile = require('../middlewares/fileUpload')
 
 const userHandler = require('../controller/userHandler')
 
@@ -71,7 +70,7 @@ router.put('/change_pwd', [
 
 // change profile pic
 
-router.put('/change_dp', uploadFile.single('profilePic'), userHandler.changeDp)
+router.put('/change_dp', userHandler.changeDp)
 
 // logged in check
 
