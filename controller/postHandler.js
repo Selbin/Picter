@@ -1,4 +1,36 @@
 const exeQuery = require('../models/db')
+const { promisify } = require('util')
+const { upload, deleteImage } = require('../middlewares/multerConfig')
+
+const uploadImage = async (req, res) => {
+  const uploader = promisify(upload.array('images', 10))
+  try {
+    await uploader(req, res)
+    if (!req.files.length) {
+      return res.status(400).json({ message: 'Image not selected' })
+    }
+    const files = req.files.map((file) => file.location)
+    return res.status(200).json({ message: 'image uploaded', images: files })
+  } catch (error) {
+    console.log(error)
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(500).json({ message: 'Image size cannot be more than 5MB.' })
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(500).json({ message: 'Cannot upload more than 10 images' })
+    }
+    if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(500).json({ message: 'Please select an image file to upload.' })
+    }
+    return res.status(500).json({ message: 'Upload failed. Please try again later.' })
+  }
+}
+
+const deleteImages = async (req, res) => {
+  const result = await deleteImage(req.params.image)
+  if (result) return res.status(200).json({ message: 'File removed!' })
+  return res.status(500).json({ message: 'There was an error. Failed to delete.' })
+}
 
 const createPost = async (req, res) => {
   const userId = req.user.userId
@@ -45,9 +77,9 @@ const getUserPosts = async (req, res) => {
   let str = ''
   if (current) {
     value.push(current)
-    str = 'AND posts.post_id < $3'
+    str = 'and posts.post_id < $3'
   }
-  const query = `SELECT posts.*, username, first_name, last_name, profile_pic, like_id FROM posts INNER JOIN users ON posts.posted_by = users.user_id LEFT JOIN likes ON likes.post_id = posts.post_id AND likes.user_id = $1 WHERE posted_by = $2 ${str} ORDER BY posts.post_id desc LIMIT 5`
+  const query = `select posts.*, username, first_name, last_name, profile_pic, like_id from posts inner join users on posts.posted_by = users.user_id left join likes on likes.post_id = posts.post_id and likes.user_id = $1 where posted_by = $2 ${str} order by posts.post_id desc limit 5`
   try {
     const result = await exeQuery(query, value)
     const posts = {
@@ -80,7 +112,7 @@ const getUserPosts = async (req, res) => {
     return res.status(200).json({ posts, users, comments: [] })
   } catch (error) {
     console.log(error)
-    res.status(500).json({ message: 'fetch failed. Please try again later.' })
+    res.status(500).json({ message: 'Fetch failed. Please try again later.' })
   }
 }
 
@@ -89,10 +121,10 @@ const deletePost = async (req, res) => {
   const query = 'delete from posts where post_id = $1 returning post_id'
   try {
     const result = await exeQuery(query, [postId])
-    res.status(200).json({ message: 'post deleted', postId: result.rows[0].post_id })
+    res.status(200).json({ message: 'Post deleted', postId: result.rows[0].post_id })
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ messages: 'Post deletion failed. Please try again later' })
   }
 }
 
@@ -245,5 +277,7 @@ module.exports = {
   commentPost,
   deleteComment,
   getComments,
-  dislike
+  dislike,
+  uploadImage,
+  deleteImages
 }
