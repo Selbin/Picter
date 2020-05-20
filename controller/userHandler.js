@@ -15,7 +15,7 @@ const registerUser = async (req, res) => {
     fullName
   } = req.body
   const query =
-    'insert into users (username, email_address, password, fullname, registered_on) values($1, $2, $3, $4, $5)'
+    'insert into users (username, email_address, password, first_name, last_name, registered_on) values($1, $2, $3, $4, $5)'
   const registeredDate = new Date()
   try {
     const encryptPwd = bcrypt.hashSync(password, 8)
@@ -158,22 +158,22 @@ const check = async (req, res) => {
 }
 
 const followUser = async (req, res) => {
-  const followingId = req.body.followingId
-  const query1 = 'select acc_type from users where user_id = $1'
-  const query2 = 'insert into following (user_id, following_id, followed_on) values ($1, $2, $3) returning follow_id'
-  const query3 = 'update users set following_count = following_count+1 where user_id = $1'
-  const query5 = 'update users set follower_count = follower_count+1 where user_id = $1 '
-  const query6 = 'insert into requests (user_id, following_id, requested_on) values ($1, $2, $3) returning request_id'
+  const { followUser, followingUser } = req.body
+  // const query1 = 'select acc_type from users where user_id = $1'
+  const query2 = 'insert into following (follow_user, following_user, followed_on) values ($1, $2, $3) returning follow_id'
+  const query3 = 'update users set following_count = following_count+1 where username = $1'
+  const query5 = 'update users set follower_count = follower_count+1 where username = $1'
+  // const query6 = 'insert into requests (user_id, following_id, requested_on) values ($1, $2, $3) returning request_id'
   try {
-    let result = await exeQuery(query1, [followingId])
-    if (result.rows[0].acc_type === 1) {
-      result = await exeQuery(query6, [req.user.userId, followingId, new Date()])
-      return res.status(200).json({ type: 'success', message: [{ msg: 'request sent' }, { msg: result.rows[0] }] })
-    }
-    result = await exeQuery(query2, [req.user.userId, followingId, new Date()])
+    // let result = await exeQuery(query1, [followingId])
+    // if (result.rows[0].acc_type === 1) {
+    //   result = await exeQuery(query6, [req.user.userId, followingId, new Date()])
+    //   return res.status(200).json({ type: 'success', message: [{ msg: 'request sent' }, { msg: result.rows[0] }] })
+    // }
+    let result = await exeQuery(query2, [followUser, followingUser, new Date()])
     const followId = result.rows[0]
-    result = await exeQuery(query3, [req.user.userId])
-    result = await exeQuery(query5, [followingId])
+    result = await exeQuery(query3, [followUser])
+    result = await exeQuery(query5, [followingUser])
     return res.status(200).json({ type: 'success', message: [{ msg: 'following user' }, { msg: followId }] })
   } catch (error) {
     console.log(error)
@@ -182,17 +182,10 @@ const followUser = async (req, res) => {
 }
 
 const unfollowUser = async (req, res) => {
-  const { followingId, type } = req.body
-  let query = ''
-  let result = ''
+  const { followingId } = req.body
   try {
-    if (type === 'request') {
-      query = 'delete from requests where user_id = $1 and following_id = $2 returning request_id'
-      result = await exeQuery(query, [req.user.userId, followingId])
-      return res.status(200).json({ type: 'success', message: [{ msg: result.rows[0] }, { msg: 'Request cancelled' }] })
-    }
-    query = 'delete from following where user_id = $1 and following_id = $2 returning follow_id'
-    result = await exeQuery(query, [req.user.userId, followingId])
+    let query = 'delete from following where user_id = $1 and following_id = $2 returning follow_id'
+    const result = await exeQuery(query, [req.user.userId, followingId])
     if (!result.rows[0]) return res.status(400).json({ type: 'error', messages: [{ msg: 'not following user' }] })
     res.status(200).json({ type: 'success', message: [{ msg: result.rows[0] }, { msg: 'Unfollowed user' }] })
     query = 'update users set following_count = following_count-1 where user_id = $1'
@@ -246,6 +239,19 @@ const getFullName = async (userId) => {
     console.log('getfullname function: ', error)
   }
 }
+
+const searchUser = async (req, res) => {
+  const pattern = req.body.pattern
+  const query = `select username, fullname, user_id from users where username like '${pattern}%'`
+  try {
+    const result = await exeQuery(query)
+    res.status(200).json({ type: 'success', users: result.rows })
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+  }
+}
+
 const showRequest = async (req, res) => {
   const userId = req.user.userId
   const query = 'select * from requests where user_id = $1'
@@ -277,18 +283,6 @@ const acceptRequest = async (req, res) => {
     result = await exeQuery(query4, [followerId])
     result = await exeQuery(query5, [result.rows[0].following_count + 1, followerId])
     return res.status(200).json({ type: 'success', message: [{ msg: 'following user' }, { msg: followId }] })
-  } catch (error) {
-    console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
-  }
-}
-
-const searchUser = async (req, res) => {
-  const pattern = req.body.pattern
-  const query = `select username, fullname, user_id from users where username like '${pattern}%'`
-  try {
-    const result = await exeQuery(query)
-    res.status(200).json({ type: 'success', users: result.rows })
   } catch (error) {
     console.log(error)
     res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
