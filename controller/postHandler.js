@@ -86,7 +86,6 @@ const getUserPosts = async (req, res) => {
       contents: {},
       ids: []
     }
-    console.log(result.rows)
     const users = {}
     result.rows.forEach((post) => {
       posts.contents[post.post_id] = {
