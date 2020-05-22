@@ -52,19 +52,31 @@ const loginUser = async (req, res) => {
 const getProfile = async (req, res) => {
   const username = req.params.username
   const currentUserId = req.user.userId
-  let followingStatus = false
-  const query = 'select user_id, email_address, first_name, last_name, bio, followers, following, profile_pic, gender from users where username = $1'
-  const query1 = 'select follow_id from following where follow_user = $1 and following_user = $2'
+  const query = 'select user_id, first_name, last_name, bio, gender,city, registered_on, followers, following, profile_pic, gender, follower_id from users left join followers on followers.follower_user = $1 and followers.following_user = users.user_id where username = $2'
   try {
-    let result = await exeQuery(query, [username])
+    const result = await exeQuery(query, [currentUserId, username])
     if (!result.rowCount) return res.status(404).json({ message: 'User not Found' })
     const response = {
-      user: result.rows[0]
+      user: {},
+      following: [],
+      followers: [],
+      users: {}
     }
-    result = await exeQuery(query1, [currentUserId, result.rows[0].user_id])
-    if (result.rowCount) followingStatus = true
-    response.user.followingStatus = followingStatus
-    res.status(200).json(response)
+    response.user = {
+      id: result.rows[0].user_id,
+      firstname: result.rows[0].first_name,
+      lastname: result.rows[0].last_name,
+      username: username,
+      gender: result.rows[0].gender,
+      city: result.rows[0].city,
+      bio: result.rows[0].bio,
+      followers: result.rows[0].followers,
+      following: result.rows[0].following,
+      avatar: result.rows[0].profile_pic,
+      isFollowing: result.rows[0].follower_id || false,
+      registeredOn: result.rows[0].registered_on
+    }
+    res.status(200).json({ user: response })
   } catch (error) {
     console.log(error)
     res.status(500).json({ message: 'There was an error. Please try again later' })
@@ -156,40 +168,55 @@ const check = async (req, res) => {
 }
 
 const followUser = async (req, res) => {
-  const { followUser, followingUser } = req.body
-  // const query1 = 'select acc_type from users where user_id = $1'
-  const query2 = 'insert into following (follow_user, following_user, followed_on) values ($1, $2, $3) returning follow_id'
-  const query3 = 'update users set following_count = following_count+1 where username = $1'
-  const query5 = 'update users set follower_count = follower_count+1 where username = $1'
-  // const query6 = 'insert into requests (user_id, following_id, requested_on) values ($1, $2, $3) returning request_id'
+  const currentUserId = req.user.userId
+  const followedUser = req.body.followedUser
+
+  const query1 = 'insert into followers (follower_user, following_user, followed_on) values ($1, $2, $3) returning *'
+  const query2 = 'update users set following = following+1 where user_id = $1 returning first_name, last_name, username, profile_pic, following'
+  const query3 = 'update users set followers = followers+1 where user_id = $1 returning followers'
   try {
-    // let result = await exeQuery(query1, [followingId])
-    // if (result.rows[0].acc_type === 1) {
-    //   result = await exeQuery(query6, [req.user.userId, followingId, new Date()])
-    //   return res.status(200).json({ type: 'success', message: [{ msg: 'request sent' }, { msg: result.rows[0] }] })
-    // }
-    let result = await exeQuery(query2, [followUser, followingUser, new Date()])
-    const followId = result.rows[0]
-    result = await exeQuery(query3, [followUser])
-    result = await exeQuery(query5, [followingUser])
-    return res.status(200).json({ type: 'success', message: [{ msg: 'following user' }, { msg: followId }] })
+    const followUser = await exeQuery(query1, [currentUserId, followedUser, new Date()])
+    const followingCount = await exeQuery(query2, [currentUserId])
+    const followerCount = await exeQuery(query3, [followedUser])
+    const response = {
+      followerId: followedUser,
+      followerCount: followerCount.rows[0].followers,
+      followers: [currentUserId],
+      users: {
+        [currentUserId]: {
+          firstname: followingCount.rows[0].first_name,
+          lastname: followingCount.rows[0].last_name,
+          username: followingCount.rows[0].username,
+          avatar: followingCount.rows[0].profile_pic,
+          count: followingCount.rows[0].following
+        }
+      },
+      isFollowing: followUser.rows[0].follower_id
+    }
+    res.status(200).json(response)
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ messages: 'Something went wrong. Please try again later' })
   }
 }
 
 const unfollowUser = async (req, res) => {
-  const { followingId } = req.body
+  const followId = req.params.followId
+  const query1 = 'delete from followers where follower_id = $1 returning *'
+  const query2 = 'update users set following = following-1 where user_id = $1 returning following'
+  const query3 = 'update users set followers = followers-1 where user_id = $1 returning followers'
   try {
-    let query = 'delete from following where user_id = $1 and following_id = $2 returning follow_id'
-    const result = await exeQuery(query, [req.user.userId, followingId])
+    const result = await exeQuery(query1, [followId])
     if (!result.rows[0]) return res.status(400).json({ type: 'error', messages: [{ msg: 'not following user' }] })
-    res.status(200).json({ type: 'success', message: [{ msg: result.rows[0] }, { msg: 'Unfollowed user' }] })
-    query = 'update users set following_count = following_count-1 where user_id = $1'
-    await exeQuery(query, [req.user.userId])
-    query = 'update users set follower_count = follower_count-1 where user_id = $1 '
-    await exeQuery(query, [followingId])
+    const unfollowUser = await exeQuery(query1, [followId])
+    const followingCount = await exeQuery(query2, [unfollowUser.rows[0].follower_user])
+    const followerCount = await exeQuery(query3, [unfollowUser.rows[0].following_user])
+    const response = {
+      followerCount: followerCount.rows[0].followers,
+      unfollower: unfollowUser.rows[0].follower_user,
+      isFollowing: false
+    }
+    res.status(200).json(response)
   } catch (error) {
     console.log(error)
     res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
@@ -197,44 +224,70 @@ const unfollowUser = async (req, res) => {
 }
 
 const getFollowers = async (req, res) => {
-  const userId = req.user.userId
-  const names = []
-  const query = 'select user_id from following where following_id =$1'
+  const userId = req.params.userId
+  const current = req.body.current
+  const value = [userId]
+  let str = ''
+  if (current) {
+    value.push(current)
+    str = 'and follower_id < $2 '
+  }
+
+  const query = `select followers.*, first_name, last_name, username, profile_pic from followers inner join users on follower_user = users.user_id where following_user = $1 ${str}order by follower_id desc limit 100`
   try {
-    const result = await exeQuery(query, [userId])
-    for (const userObj of result.rows) {
-      names.push(await getFullName(userObj.user_id))
+    const result = await exeQuery(query, value)
+    if (!result.rowCount) return res.status(200).json({ followers: [], users: {} })
+    const response = {
+      followers: [],
+      users: {}
     }
-    return res.status(200).json({ type: 'success', user: names })
+    result.rows.forEach((row) => {
+      response.followers.push(row.follower_user)
+      response.users[row.follower_user] = {
+        firstname: row.first_name,
+        lastname: row.last_name,
+        username: row.username,
+        avatar: row.profile_pic
+      }
+    })
+    return res.status(200).json(response)
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ messages: 'Something went wrong. Please try again later' })
   }
 }
 
 const getFollowing = async (req, res) => {
-  const userId = req.user.userId
-  const names = []
-  const query = 'select following_id from following where user_id =$1'
+  const userId = req.params.userId
+  const current = req.body.current
+  const value = [userId]
+  let str = ''
+  if (current) {
+    value.push(current)
+    str = 'and follower_id < $2 '
+  }
+
+  const query = `select followers.*, first_name, last_name, username, profile_pic from followers inner join users on following_user = users.user_id where follower_user = $1 ${str}order by follower_id desc limit 100`
   try {
-    const result = await exeQuery(query, [userId])
-    for (const userObj of result.rows) {
-      names.push(await getFullName(userObj.following_id))
+    const result = await exeQuery(query, value)
+    if (!result.rowCount) return res.status(200).json({ followers: [], users: {} })
+    const response = {
+      following: [],
+      users: {}
     }
-    return res.status(200).json({ type: 'success', user: names })
+    result.rows.forEach((row) => {
+      response.following.push(row.following_user)
+      response.users[row.following_user] = {
+        firstname: row.first_name,
+        lastname: row.last_name,
+        username: row.username,
+        avatar: row.profile_pic
+      }
+    })
+    return res.status(200).json(response)
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
-  }
-}
-
-const getFullName = async (userId) => {
-  const query = 'select fullname from users where user_id = $1'
-  try {
-    const result = await exeQuery(query, [userId])
-    return result.rows[0].fullname
-  } catch (error) {
-    console.log('getfullname function: ', error)
+    res.status(500).json({ messages: 'Something went wrong. Please try again later' })
   }
 }
 
