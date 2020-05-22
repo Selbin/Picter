@@ -8,14 +8,8 @@ const registerUser = async (req, res) => {
   if (!errors.isEmpty()) return res.status(422).json({ type: 'error', messages: errors.array() })
   if (req.user) return res.status(409).json({ type: 'error', messages: [{ msg: 'Username already exist' }] })
   if (req.email) return res.status(409).json({ type: 'error', messages: [{ msg: 'Email already exist' }] })
-  const {
-    userName,
-    email,
-    password,
-    fullName
-  } = req.body
-  const query =
-    'insert into users (username, email_address, password, first_name, last_name, registered_on) values($1, $2, $3, $4, $5)'
+  const { userName, email, password, fullName } = req.body
+  const query = 'insert into users (username, email_address, password, first_name, last_name, registered_on) values($1, $2, $3, $4, $5)'
   const registeredDate = new Date()
   try {
     const encryptPwd = bcrypt.hashSync(password, 8)
@@ -28,7 +22,7 @@ const registerUser = async (req, res) => {
     ])
     res.status(201).json({ type: 'success', messages: [{ msg: 'Registration successfull, Please login to continue' }] })
   } catch (error) {
-    console.log('register user', error)
+    console.log(error)
     res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
   }
 }
@@ -56,21 +50,24 @@ const loginUser = async (req, res) => {
 }
 
 const getProfile = async (req, res) => {
-  const userName = req.params.userName
+  const username = req.params.username
   const currentUserId = req.user.userId
   let followingStatus = false
-  const query = 'select user_id, username, email_address, fullname, bio, follower_count, following_count, profile_pic, gender from users where username = $1'
-  const query1 = 'select follow_id from following where user_id = $1 and following_id = $2'
+  const query = 'select user_id, email_address, first_name, last_name, bio, followers, following, profile_pic, gender from users where username = $1'
+  const query1 = 'select follow_id from following where follow_user = $1 and following_user = $2'
   try {
-    const result = await exeQuery(query, [userName])
-    if (!result.rowCount) return res.status(404).json({ type: 'error', messages: 'User not Found' })
-    const result1 = await exeQuery(query1, [currentUserId, result.rows[0].user_id])
-    if (result1.rowCount) followingStatus = true
-    result.rows[0].followingStatus = followingStatus
-    res.status(200).json({ type: 'Success', profile: result.rows[0] })
+    let result = await exeQuery(query, [username])
+    if (!result.rowCount) return res.status(404).json({ message: 'User not Found' })
+    const response = {
+      user: result.rows[0]
+    }
+    result = await exeQuery(query1, [currentUserId, result.rows[0].user_id])
+    if (result.rowCount) followingStatus = true
+    response.user.followingStatus = followingStatus
+    res.status(200).json(response)
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ message: 'There was an error. Please try again later' })
   }
 }
 
