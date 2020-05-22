@@ -82,19 +82,19 @@ router.post('/follow', userHandler.followUser)
 
 // unfollow user
 
-router.post('/unfollow', userHandler.unfollowUser)
+router.delete('/unfollow/:followId', userHandler.unfollowUser)
 
 // get profile info
 
-router.post('/profile/:userName', userHandler.getProfile)
+router.get('/:username', userHandler.getProfile)
 
 // get followers
 
-router.get('/getfollowers', userHandler.getFollowers)
+router.post('/followers/:userId', userHandler.getFollowers)
 
 // get following
 
-router.get('/getfollowing', userHandler.getFollowing)
+router.post('/following/:userId', userHandler.getFollowing)
 
 // search user
 
