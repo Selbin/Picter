@@ -43,8 +43,8 @@ CREATE TABLE users
   registered_on VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE following (
-  follow_id SERIAL PRIMARY KEY,
+CREATE TABLE followers (
+  follower_id SERIAL PRIMARY KEY,
   follower_user INTEGER NOT NULL,
   following_user INTEGER NOT NULL,
   followed_on VARCHAR(255) NOT NULL
