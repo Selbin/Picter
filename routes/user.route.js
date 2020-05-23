@@ -49,16 +49,7 @@ router.post(
 
 // update user details
 
-router.put(
-  '/update',
-  [
-    check('fullName')
-      .not()
-      .isEmpty()
-      .withMessage('provide Fullname')
-  ],
-  userHandler.updateProfile
-)
+router.post('/update', userHandler.updateProfile)
 
 // change password
 
@@ -67,10 +58,6 @@ router.put('/change_pwd', [
     .isLength({ min: 8 })
     .withMessage('Password must be at least 5 characters long')
 ], userHandler.updatePwd)
-
-// change profile pic
-
-router.put('/change_dp', userHandler.changeDp)
 
 // logged in check
 
@@ -98,6 +85,6 @@ router.post('/following/:userId', userHandler.getFollowing)
 
 // search user
 
-router.post('/search', userHandler.searchUser)
+router.get('/search/:name/:current', userHandler.searchUser)
 
 module.exports = router
