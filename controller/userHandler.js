@@ -84,38 +84,37 @@ const getProfile = async (req, res) => {
 }
 
 const updateProfile = async (req, res) => {
-  const errors = validationResult(req)
-  if (!errors.isEmpty()) return res.status(422).send(errors.array())
+  const updateProfile = req.body
+  const currentUserId = req.user.userId
   if (!req.body) return res.status(400).json({ messages: 'fields are empty' })
-  const {
-    userName,
-    gender,
-    fullName,
-    phoneNo,
-    bio,
-    accType,
-    website,
-    profilePic
-  } = req.body
-  const query =
-    'update users set gender = $1, fullname = $2, phone_no = $3, bio = $4, acc_type = $5, website = $6, profile_pic = $7 where username = $8 returning user_id'
+  const values = [currentUserId]
+  const dbFields = {
+    firstname: 'first_name',
+    lastname: 'last_name',
+    bio: 'bio',
+    avatar: 'profile_pic'
+  }
+  let str = 'update user set'
   try {
-    const result = await exeQuery(query, [
-      gender,
-      fullName,
-      phoneNo,
-      bio,
-      accType,
-      website,
-      profilePic,
-      userName
-    ])
-    res
-      .status(200)
-      .json({ type: 'Success', result: result.rows[0], messages: 'successfully updated' })
+    updateProfile.forEach((field, index) => {
+      if (index) str += ', '
+      str += `${dbFields[field]} = $${index + 2}`
+      values.push(updateProfile[field])
+    })
+    const query = str + 'where user_id = $1 returning first_name, last_name, profile_pic, bio'
+    const result = await exeQuery(query, values)
+    const response = {
+      id: currentUserId,
+      username: result.rows[0].username,
+      firstname: result.rows[0].first_name,
+      lastname: result.rows[0].last_name,
+      avatar: result.rows[0].profile_pic,
+      bio: result.rows[0].bio
+    }
+    res.status(200).json(response)
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ message: 'Something went wrong. Please try again' })
   }
 }
 
@@ -292,14 +291,14 @@ const getFollowing = async (req, res) => {
 }
 
 const searchUser = async (req, res) => {
-  const pattern = req.body.pattern
-  const query = `select username, fullname, user_id from users where username like '${pattern}%'`
+  const { name, current } = req.params
+  const query = 'select user_id as id, username, first_name as firstname, last_name as lastname, profile_pic as avatar, bio from users where first_name ilike $1 or last_name ilike $1 or username ilike $1 and user_id > $2 order by user_id asc limit 20'
   try {
-    const result = await exeQuery(query)
-    res.status(200).json({ type: 'success', users: result.rows })
+    const result = await exeQuery(query, [`%${name}%`, current])
+    res.status(200).json(result.rows)
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ messages: 'Something went wrong. Please try again later' })
   }
 }
 
