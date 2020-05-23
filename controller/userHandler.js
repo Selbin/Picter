@@ -141,20 +141,6 @@ const updatePwd = async (req, res) => {
   }
 }
 
-const changeDp = async (req, res) => {
-  const userId = req.user.userId
-  const images = req.body.images
-  if (!images) return res.status(400).json({ message: 'Please select image to upload' })
-  if (!userId) return res.status(400).json({ type: 'error', messages: [{ msg: 'There was an error while creating new post. Please try again later.' }] })
-  const query = 'update users set profile_pic = $1 where user_id = $2 returning profile_pic'
-  try {
-    const result = await exeQuery(query, [images, userId])
-    res.status(200).json({ result: result.rows[0], message: 'profile pic updated' })
-  } catch (error) {
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
-  }
-}
-
 const check = async (req, res) => {
   const query = 'select user_id, username, email_address, fullname, bio, follower_count, following_count, profile_pic, gender from users where username = $1'
   try {
