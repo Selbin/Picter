@@ -117,10 +117,12 @@ const getUserPosts = async (req, res) => {
 
 const deletePost = async (req, res) => {
   const postId = req.params.postId
-  const query = 'delete from posts where post_id = $1 returning post_id'
+  const currentUserId = req.user.userId
+  const query = 'delete from posts where post_id = $1 and posted_by = $2 returning post_id'
   try {
-    const result = await exeQuery(query, [postId])
-    res.status(200).json({ message: 'Post deleted', postId: result.rows[0].post_id })
+    const result = await exeQuery(query, [postId, currentUserId])
+    if (!result.rowCount) res.status(404).json({ message: 'Post not Found' })
+    res.status(200).json({ message: 'Post deleted' })
   } catch (error) {
     console.log(error)
     res.status(500).json({ messages: 'Post deletion failed. Please try again later' })
