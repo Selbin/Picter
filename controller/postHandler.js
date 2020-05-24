@@ -53,7 +53,7 @@ const createPost = async (req, res) => {
     }
     response.posts.contents[post.post_id] = {
       caption: post.caption,
-      images: post.image_url,
+      images: post.image_urls,
       timestamp: post.posted_on,
       likes: post.like_count,
       comments: post.comment_count,
