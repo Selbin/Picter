@@ -209,7 +209,7 @@ const unfollowUser = async (req, res) => {
 }
 
 const getFollowers = async (req, res) => {
-  const userId = req.params.userId
+  const userId = req.user.userId
   const current = req.body.current
   const value = [userId]
   let str = ''
@@ -243,7 +243,7 @@ const getFollowers = async (req, res) => {
 }
 
 const getFollowing = async (req, res) => {
-  const userId = req.params.userId
+  const userId = req.user.userId
   const current = req.body.current
   const value = [userId]
   let str = ''
