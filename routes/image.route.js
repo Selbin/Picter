@@ -5,4 +5,4 @@ const postHandler = require('../controller/postHandler')
 router.post('/upload', postHandler.uploadImage)
 router.delete('/:image', postHandler.deleteImages)
 
-module.export = router
+module.exports = router
