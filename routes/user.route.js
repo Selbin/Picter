@@ -5,48 +5,6 @@ const router = express.Router()
 
 const userHandler = require('../controller/userHandler')
 
-// register user
-
-router.post(
-  '/register',
-  [
-    check('userName')
-      .not()
-      .isEmpty()
-      .withMessage("Username Shouldn't be empty"),
-    check('fullName')
-      .not()
-      .isEmpty()
-      .withMessage('Provide Fullname'),
-    check('email')
-      .isEmail()
-      .withMessage('Invalid E-mail'),
-    check('password')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 5 characters long')
-  ],
-  emailExist,
-  userExist,
-  userHandler.registerUser
-)
-
-// user login
-
-router.post(
-  '/login',
-  [
-    check('userName')
-      .not()
-      .isEmpty()
-      .withMessage("Username Shouldn't be empty"),
-    check('password')
-      .isLength({ min: 5 })
-      .withMessage('Wrong password')
-  ],
-  userExist,
-  userHandler.loginUser
-)
-
 // update user details
 
 router.post('/update', userHandler.updateProfile)
@@ -58,10 +16,6 @@ router.put('/change_pwd', [
     .isLength({ min: 8 })
     .withMessage('Password must be at least 5 characters long')
 ], userHandler.updatePwd)
-
-// logged in check
-
-router.get('/check', userHandler.check)
 
 // follow user
 
