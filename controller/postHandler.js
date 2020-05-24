@@ -35,7 +35,7 @@ const deleteImages = async (req, res) => {
 const createPost = async (req, res) => {
   const userId = req.user.userId
   const { caption, images } = req.body
-  const postedOn = new Date()
+  const postedOn = Date.now()
   if (!images.length) return res.status(400).json({ message: 'Please select files to upload' })
   if (!userId) return res.status(400).json({ type: 'error', messages: [{ msg: 'There was an error while creating new post. Please try again later.' }] })
   const query =
@@ -132,7 +132,7 @@ const deletePost = async (req, res) => {
 const like = async (req, res) => {
   const postId = req.body.postId
   const loggedUserId = req.user.userId
-  const likedOn = new Date()
+  const likedOn = Date.now()
   const query = 'update posts set like_count = like_count+1 where post_id = $1 returning like_count'
   const query2 = 'insert into likes (post_id, user_id, liked_on) values ($1, $2, $3) returning *'
   try {
@@ -166,7 +166,7 @@ const dislike = async (req, res) => {
 
 const commentPost = async (req, res) => {
   const { comment, postId } = req.body
-  const commentedOn = new Date()
+  const commentedOn = Date.now()
   const query = 'insert into comments (comment, user_id, post_id, commented_on) values ($1, $2, $3, $4) returning *'
   const query1 = 'update posts set comment_count = comment_count+1 where post_id = $1 returning comment_count'
   try {
