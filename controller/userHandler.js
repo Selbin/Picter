@@ -297,37 +297,42 @@ const userFeed = async (req, res) => {
   let str = ''
   if (current) {
     value.push(current)
-    str = ' AND posts.post_id < $2'
+    str = ' and posts.post_id < $2'
   }
   const query = `select posts.*, username, first_name, last_name, profile_pic, like_id from posts inner join users on posts.posted_by = users.user_id left join likes on likes.post_id = posts.post_id and likes.user_id = $1 where posts.posted_by in ((select following_user from followers where follower_user = $1), $1)${str} order by posts.post_id desc limit 5`
-  const result = await exeQuery(query, value)
-  const posts = {
-    contents: {},
-    ids: []
-  }
-  const users = {}
-  result.rows.forEach((post) => {
-    posts.contents[post.post_id] = {
-      caption: post.caption,
-      images: post.image_urls,
-      timestamp: post.posted_on,
-      likes: post.like_count,
-      comments: post.comment_count,
-      commentIds: [],
-      author: post.posted_by,
-      liked: post.like_id || false
+  try {
+    const result = await exeQuery(query, value)
+    const posts = {
+      contents: {},
+      ids: []
     }
-    posts.ids.push(post.post_id)
-    if (!(post.posted_by in users)) {
-      users[post.posted_by] = {
-        username: post.username,
-        firstname: post.first_name,
-        lastname: post.last_name,
-        avatar: post.profile_pic
+    const users = {}
+    result.rows.forEach((post) => {
+      posts.contents[post.post_id] = {
+        caption: post.caption,
+        images: post.image_urls,
+        timestamp: post.posted_on,
+        likes: post.like_count,
+        comments: post.comment_count,
+        commentIds: [],
+        author: post.posted_by,
+        liked: post.like_id || false
       }
-    }
-  })
-  return res.status(200).json({ posts, users, comments: [] })
+      posts.ids.push(post.post_id)
+      if (!(post.posted_by in users)) {
+        users[post.posted_by] = {
+          username: post.username,
+          firstname: post.first_name,
+          lastname: post.last_name,
+          avatar: post.profile_pic
+        }
+      }
+    })
+    return res.status(200).json({ posts, users, comments: [] }) 
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ messages: 'Something went wrong. Please try again later' })
+  }
 }
 
 module.exports = { registerUser, loginUser, updateProfile, updatePwd, check, getProfile, followUser, unfollowUser, getFollowers, getFollowing, searchUser, userFeed }
