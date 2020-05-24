@@ -24,10 +24,6 @@ router.post('/follow', userHandler.followUser)
 
 router.delete('/unfollow/:followId', userHandler.unfollowUser)
 
-// get profile info
-
-router.get('/:username', userHandler.getProfile)
-
 // get followers
 
 router.post('/followers/:userId', userHandler.getFollowers)
@@ -41,5 +37,9 @@ router.post('/following/:userId', userHandler.getFollowing)
 router.get('/search/:name/:current', userHandler.searchUser)
 
 router.post('/newsfeed', userHandler.userFeed)
+
+// get profile info
+
+router.get('/:username', userHandler.getProfile)
 
 module.exports = router

@@ -3,17 +3,9 @@ const router = express.Router()
 
 const postHandler = require('../controller/postHandler')
 
-// get user posts
-
-router.post('/:userId', postHandler.getUserPosts)
-
 // posting
 
 router.post('/', postHandler.createPost)
-
-// delete post
-
-router.delete('/:postId', postHandler.deletePost)
 
 // like posts
 
@@ -35,8 +27,12 @@ router.delete('/comment', postHandler.deleteComment)
 
 router.post('/getcomment', postHandler.getComments)
 
-// display timeline
+// delete post
 
-// router.get('/timeline', postHandler.loadTimeline)
+router.delete('/:postId', postHandler.deletePost)
+
+// get user posts
+
+router.post('/:userId', postHandler.getUserPosts)
 
 module.exports = router
