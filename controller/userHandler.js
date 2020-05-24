@@ -97,7 +97,7 @@ const updateProfile = async (req, res) => {
     bio: 'bio',
     avatar: 'profile_pic'
   }
-  let str = 'update users set'
+  let str = 'update users set '
   try {
     Object.keys(updateProfile).forEach((field, index) => {
       if (index) str += ', '
