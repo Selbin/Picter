@@ -123,7 +123,7 @@ const updateProfile = async (req, res) => {
 
 const updatePwd = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) return res.status(422).send(errors.array())
+  if (!errors.isEmpty()) return res.status(422).json({ message: 'Please enter password' })
   const { password, newPassword } = req.body
   const userId = req.user.userId
   let query = 'select password from users where user_id = $1'
