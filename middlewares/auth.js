@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken')
 
 const authenticate = (req, res, next) => {
-  if (req.url === '/api/picter/auth/register' || req.url === '/api/picter/auth/login' || req.url === '/api/picter/auth/check') return next()
+  if (req.url === '/picter/api/auth/register' || req.url === '/picter/api/auth/login' || req.url === '/picter/api/auth/check') return next()
   const token = req.headers['x-auth-token']
   if (!token) return res.status(401).json({ message: 'please login' })
   jwt.verify(token, process.env.PRIVATEKEY, (err, user) => {
