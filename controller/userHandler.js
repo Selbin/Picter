@@ -99,7 +99,7 @@ const updateProfile = async (req, res) => {
   }
   let str = 'update users set'
   try {
-    updateProfile.forEach((field, index) => {
+    Object.keys(updateProfile).forEach((field, index) => {
       if (index) str += ', '
       str += `${dbFields[field]} = $${index + 2}`
       values.push(updateProfile[field])
