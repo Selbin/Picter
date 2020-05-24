@@ -57,7 +57,7 @@ const loginUser = async (req, res) => {
 const getProfile = async (req, res) => {
   const username = req.params.username
   const currentUserId = req.user.userId
-  const query = 'select user_id, first_name, last_name, bio, gender,city, registered_on, followers, following, profile_pic, gender, follower_id from users left join followers on followers.follower_user = $1 and followers.following_user = users.user_id where username = $2'
+  const query = 'select user_id, first_name, last_name, bio, registered_on, followers, following, profile_pic, follower_id from users left join followers on followers.follower_user = $1 and followers.following_user = users.user_id where username = $2'
   try {
     const result = await exeQuery(query, [currentUserId, username])
     if (!result.rowCount) return res.status(404).json({ message: 'User not Found' })
@@ -72,8 +72,6 @@ const getProfile = async (req, res) => {
       firstname: result.rows[0].first_name,
       lastname: result.rows[0].last_name,
       username: username,
-      gender: result.rows[0].gender,
-      city: result.rows[0].city,
       bio: result.rows[0].bio,
       followers: result.rows[0].followers,
       following: result.rows[0].following,
