@@ -1,6 +1,5 @@
 const express = require('express')
 const { check } = require('express-validator')
-const { emailExist, userExist } = require('../middlewares/registerValidation')
 const router = express.Router()
 
 const userHandler = require('../controller/userHandler')
