@@ -255,7 +255,7 @@ const getFollowing = async (req, res) => {
   const query = `select followers.*, first_name, last_name, username, profile_pic from followers inner join users on following_user = users.user_id where follower_user = $1 ${str}order by follower_id desc limit 100`
   try {
     const result = await exeQuery(query, value)
-    if (!result.rowCount) return res.status(200).json({ followers: [], users: {} })
+    if (!result.rowCount) return res.status(200).json({ following: [], users: {} })
     const response = {
       following: [],
       users: {}
