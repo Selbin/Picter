@@ -291,7 +291,7 @@ const searchUser = async (req, res) => {
 }
 
 const userFeed = async (req, res) => {
-  const userId = req.user.id
+  const userId = req.user.userId
   const { current } = req.body
   const value = [userId]
   let str = ''
