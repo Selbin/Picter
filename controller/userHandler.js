@@ -32,7 +32,7 @@ const loginUser = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) return res.status(422).json({ message: errors.array() })
   const { email, password } = req.body
-  const query = 'select * from users where email_addresss = $1'
+  const query = 'select * from users where email_address = $1'
   try {
     const result = await exeQuery(query, [email])
     if (!result.rowCount) return res.status(404).json({ message: 'User doesn\'t exist' })
