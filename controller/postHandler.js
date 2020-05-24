@@ -58,7 +58,7 @@ const createPost = async (req, res) => {
       likes: post.like_count,
       comments: post.comment_count,
       commentIds: [],
-      author: post.user_id,
+      author: post.posted_by,
       liked: false
     }
     response.posts.ids.push(post.post_id)
