@@ -101,10 +101,10 @@ const updateProfile = async (req, res) => {
   try {
     Object.keys(updateProfile).forEach((field, index) => {
       if (index) str += ', '
-      str += `${dbFields[field]} = $${index + 2}`
+      str += `${dbFields[field]} = $${index + 2} `
       values.push(updateProfile[field])
     })
-    const query = str + 'where user_id = $1 returning first_name, last_name, profile_pic, bio'
+    const query = str + 'where user_id = $1 returning username, first_name, last_name, profile_pic, bio'
     const result = await exeQuery(query, values)
     const response = {
       id: currentUserId,
