@@ -10,7 +10,7 @@ router.post('/update', userHandler.updateProfile)
 
 // change password
 
-router.put('/change_pwd', [
+router.put('/update/password', [
   check('newPassword1')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 5 characters long')
