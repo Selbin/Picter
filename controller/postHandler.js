@@ -244,32 +244,6 @@ const getComments = async (req, res) => {
   res.status(200).json({ comments: response })
 }
 
-// const loadTimeline = async (req, res) => {
-//   const userId = req.user.userId
-//   const offset = req.body.offset
-//   const limit = req.body.limit
-//   const posts = []
-//   const likedPosts = []
-//   const query = 'select posts.*, users.username, users.fullname from posts inner join users on users.user_id = posts.user_id where posts.user_id in (select following_id from following where user_id = $1) order by posted_on desc limit $2 offset $3'
-//   try {
-//     const result = await exeQuery(query, [userId, limit, offset])
-//     result.rows.forEach((post) => {
-//       posts.push(post.post_id)
-//     })
-//     for (const post of posts) {
-//       likedPosts.push(await userLikeStatus(post, userId, 'post'))
-//     }
-//     result.rows.forEach((post) => {
-//       if (likedPosts.includes(post.post_id)) post.liked = true
-//       else post.liked = false
-//     })
-//     res.status(200).json({ type: 'success', post: result.rows })
-//   } catch (error) {
-//     console.log(error)
-//     res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
-//   }
-// }
-
 module.exports = {
   createPost,
   getUserPosts,
