@@ -10,7 +10,7 @@ const registerUser = async (req, res) => {
   if (req.email) return res.status(409).json({ message: 'Email already exist' })
   const { username, email, password, firstname, lastname } = req.body
   const query = 'insert into users (username, email_address, password, first_name, last_name, registered_on) values($1, $2, $3, $4, $5, $6)'
-  const registeredDate = new Date()
+  const registeredDate = Date.now()
   try {
     const encryptPwd = bcrypt.hashSync(password, 8)
     await exeQuery(query, [
@@ -162,7 +162,7 @@ const followUser = async (req, res) => {
   const query2 = 'update users set following = following+1 where user_id = $1 returning first_name, last_name, username, profile_pic, following'
   const query3 = 'update users set followers = followers+1 where user_id = $1 returning followers'
   try {
-    const followUser = await exeQuery(query1, [currentUserId, followedUser, new Date()])
+    const followUser = await exeQuery(query1, [currentUserId, followedUser, Date.now()])
     const followingCount = await exeQuery(query2, [currentUserId])
     const followerCount = await exeQuery(query3, [followedUser])
     const response = {
