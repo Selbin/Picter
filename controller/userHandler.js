@@ -5,47 +5,52 @@ const { validationResult } = require('express-validator')
 
 const registerUser = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) return res.status(422).json({ type: 'error', messages: errors.array() })
-  if (req.user) return res.status(409).json({ type: 'error', messages: [{ msg: 'Username already exist' }] })
-  if (req.email) return res.status(409).json({ type: 'error', messages: [{ msg: 'Email already exist' }] })
-  const { userName, email, password, fullName } = req.body
-  const query = 'insert into users (username, email_address, password, first_name, last_name, registered_on) values($1, $2, $3, $4, $5)'
+  if (!errors.isEmpty()) return res.status(422).json({ message: errors.array() })
+  if (req.user) return res.status(409).json({ message: 'Username already exist' })
+  if (req.email) return res.status(409).json({ message: 'Email already exist' })
+  const { username, email, password, firstname, lastname } = req.body
+  const query = 'insert into users (username, email_address, password, first_name, last_name, registered_on) values($1, $2, $3, $4, $5, $6)'
   const registeredDate = new Date()
   try {
     const encryptPwd = bcrypt.hashSync(password, 8)
     await exeQuery(query, [
-      userName,
+      username,
       email,
       encryptPwd,
-      fullName,
+      firstname,
+      lastname,
       registeredDate
     ])
-    res.status(201).json({ type: 'success', messages: [{ msg: 'Registration successfull, Please login to continue' }] })
+    res.status(201).json({ message: 'Registration successfull, Please login to continue' })
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ message: 'Registration failed, Please try again' })
   }
 }
 
 const loginUser = async (req, res) => {
   const errors = validationResult(req)
-  if (!errors.isEmpty()) return res.status(422).json({ type: 'error', messages: errors.array() })
-  if (!req.user) return res.status(404).json({ type: 'error', messages: [{ msg: 'User doesn\'t exist' }] })
-  const { userName, password } = req.body
-  const query = 'select * from users where username = $1'
+  if (!errors.isEmpty()) return res.status(422).json({ message: errors.array() })
+  const { email, password } = req.body
+  const query = 'select * from users where email_addresss = $1'
   try {
-    const result = await exeQuery(query, [userName])
-    if (!bcrypt.compareSync(password, result.rows[0].password)) return res.status(401).json({ type: 'error', messages: [{ msg: 'Invalid credentials' }] })
-    delete result.rows[0].password
-    const accessToken = jwt.sign(
-      { email: result.rows[0].email, userName, userId: result.rows[0].user_id },
-      process.env.PRIVATEKEY
-    )
-    res.cookie('Authorization', accessToken, { expires: new Date(new Date().getTime() + 10 * 24 * 60 * 60 * 1000) })
-    res.status(200).json({ type: 'success', user: result.rows[0], accessToken })
+    const result = await exeQuery(query, [email])
+    if (!result.rowCount) return res.status(404).json({ message: 'User doesn\'t exist' })
+    if (!bcrypt.compareSync(password, result.rows[0].password)) return res.status(401).json({ message: 'Invalid credentials' })
+    const accessToken = jwt.sign({ userId: result.rows[0].user_id }, process.env.PRIVATEKEY, { expiresIn: '3 days' })
+    const response = {
+      accessToken,
+      user: {
+        id: result.rows[0].user_id,
+        username: result.rows[0].username,
+        firstname: result.rows[0].first_name,
+        lastname: result.rows[0].last_name
+      }
+    }
+    return res.status(200).json(response)
   } catch (error) {
     console.log('login', error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ message: 'Login failed. Please try again' })
   }
 }
 
@@ -121,34 +126,31 @@ const updateProfile = async (req, res) => {
 const updatePwd = async (req, res) => {
   const errors = validationResult(req)
   if (!errors.isEmpty()) return res.status(422).send(errors.array())
-  const { oldPassword, newPassword1, newPassword2 } = req.body
-  const userName = req.user.userName
-  if (!(newPassword1 === newPassword2)) return res.status(401).json({ messages: "new passwords doesn't match" })
-  let query = 'select password from users where username = $1'
+  const { password, newPassword } = req.body
+  const userId = req.user.userId
+  let query = 'select password from users where user_id = $1'
   try {
-    let result = await exeQuery(query, [userName])
-    if (!bcrypt.compareSync(oldPassword, result.rows[0].password)) return res.status(401).json({ message: 'Current password is wrong' })
-    const encryptPwd = bcrypt.hashSync(newPassword1, 8)
-    query =
-      'update users set password = $1 where username = $2 returning user_id'
-    result = await exeQuery(query, [encryptPwd, userName])
-    res
-      .status(200)
-      .json({ result: result.rows[0], message: 'password changed' })
+    const result = await exeQuery(query, [userId])
+    if (!bcrypt.compareSync(password, result.rows[0].password)) return res.status(401).json({ message: 'Current password is wrong' })
+    const encryptPwd = bcrypt.hashSync(newPassword, 8)
+    query = 'update users set password = $1 where user_id = $2'
+    await exeQuery(query, [encryptPwd, userId])
+    res.status(200).json({ message: 'Password updated successfully' })
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ message: 'Something went wrong. Please try again' })
   }
 }
 
 const check = async (req, res) => {
-  const query = 'select user_id, username, email_address, fullname, bio, follower_count, following_count, profile_pic, gender from users where username = $1'
+  const query = 'select user_id as id, username, first_name as firstname, last_name as lastname, profile_pic as avatar from users where user_id = $1'
   try {
-    const result = await exeQuery(query, [req.user.userName])
-    res.status(200).json({ user: result.rows[0], message: 'user logged in' })
+    const result = await exeQuery(query, [req.user.userId])
+    if (!result.rowCount) return res.status(404).json({ message: 'User not found' })
+    res.status(200).json(result.rows[0])
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ message: 'Something went wrong, Please try again' })
   }
 }
 
@@ -288,4 +290,44 @@ const searchUser = async (req, res) => {
   }
 }
 
-module.exports = { registerUser, loginUser, updateProfile, updatePwd, check, getProfile, followUser, unfollowUser, getFollowers, getFollowing, searchUser }
+const userFeed = async (req, res) => {
+  const userId = req.user.id
+  const { current } = req.body
+  const value = [userId]
+  let str = ''
+  if (current) {
+    value.push(current)
+    str = ' AND posts.post_id < $2'
+  }
+  const query = `select posts.*, username, first_name, last_name, profile_pic, like_id from posts inner join users on posts.posted_by = users.user_id left join likes on likes.post_id = posts.post_id and likes.user_id = $1 where posts.posted_by in ((select following_user from followers where follower_user = $1), $1)${str} order by posts.post_id desc limit 5`
+  const result = await exeQuery(query, value)
+  const posts = {
+    contents: {},
+    ids: []
+  }
+  const users = {}
+  result.rows.forEach((post) => {
+    posts.contents[post.post_id] = {
+      caption: post.caption,
+      images: post.image_urls,
+      timestamp: post.posted_on,
+      likes: post.like_count,
+      comments: post.comment_count,
+      commentIds: [],
+      author: post.posted_by,
+      liked: post.like_id || false
+    }
+    posts.ids.push(post.post_id)
+    if (!(post.posted_by in users)) {
+      users[post.posted_by] = {
+        username: post.username,
+        firstname: post.first_name,
+        lastname: post.last_name,
+        avatar: post.profile_pic
+      }
+    }
+  })
+  return res.status(200).json({ posts, users, comments: [] })
+}
+
+module.exports = { registerUser, loginUser, updateProfile, updatePwd, check, getProfile, followUser, unfollowUser, getFollowers, getFollowing, searchUser, userFeed }
