@@ -243,7 +243,7 @@ const getFollowers = async (req, res) => {
 }
 
 const getFollowing = async (req, res) => {
-  const userId = req.user.userId
+  const userId = req.params.userId
   const current = req.body.current
   const value = [userId]
   let str = ''
