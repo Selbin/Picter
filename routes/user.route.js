@@ -40,4 +40,6 @@ router.post('/following/:userId', userHandler.getFollowing)
 
 router.get('/search/:name/:current', userHandler.searchUser)
 
+router.post('/newsfeed', userHandler.userFeed)
+
 module.exports = router
