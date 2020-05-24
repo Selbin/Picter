@@ -191,9 +191,8 @@ const unfollowUser = async (req, res) => {
   const query2 = 'update users set following = following-1 where user_id = $1 returning following'
   const query3 = 'update users set followers = followers-1 where user_id = $1 returning followers'
   try {
-    const result = await exeQuery(query1, [followId])
-    if (!result.rows[0]) return res.status(400).json({ type: 'error', messages: [{ msg: 'not following user' }] })
     const unfollowUser = await exeQuery(query1, [followId])
+    if (!unfollowUser.rows[0]) return res.status(400).json({ message: 'not following user' })
     const followingCount = await exeQuery(query2, [unfollowUser.rows[0].follower_user])
     const followerCount = await exeQuery(query3, [unfollowUser.rows[0].following_user])
     const response = {
@@ -204,7 +203,7 @@ const unfollowUser = async (req, res) => {
     res.status(200).json(response)
   } catch (error) {
     console.log(error)
-    res.status(500).json({ type: 'error', messages: [{ msg: 'Server error' }] })
+    res.status(500).json({ messages: 'Something went wrong. Please try again later' })
   }
 }
 
