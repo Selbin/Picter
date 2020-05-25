@@ -16,5 +16,7 @@ app.use(authenticate)
 
 app.use('/picter/api', indexRoutes)
 
+app.use(express.static())
+
 const port = process.env.PORT || 6000
 app.listen(port, () => console.log(`Listening on port ${port}...`))
